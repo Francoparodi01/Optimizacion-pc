@@ -110,6 +110,27 @@ foreach ($t in $tasks) {
     }
 }
 
+Write-Log "🎨 Restaurando efectos visuales a valor por defecto..."
+
+try {
+    # Volver a "automático" (dejar que Windows decida)
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" `
+        -Name "VisualFXSetting" -Value 0 -ErrorAction SilentlyContinue
+
+    # Restaurar máscara animaciones estándar
+    Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" `
+        -Name "UserPreferencesMask" `
+        -Value ([byte[]](0x9E,0x3E,0x07,0x80,0x10,0x00,0x00,0x00)) `
+        -ErrorAction SilentlyContinue
+
+    RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters ,1 ,True
+
+    Write-Log "✅ Efectos visuales restaurados (modo automático)."
+} catch {
+    Write-Log "⚠️ No se pudo restaurar la apariencia visual."
+}
+
+
 # — 7) Servicios de telemetría —
 Write-Log "📡 Restaurando servicios de telemetría..."
 $tele = @("DiagTrack","dmwappushservice","WMPNetworkSvc")
