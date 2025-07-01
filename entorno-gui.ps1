@@ -109,31 +109,44 @@ function Invoke-ScriptAsync {
 # Base directory de los scripts
 $basePath = [AppDomain]::CurrentDomain.BaseDirectory
 
-# Evento: Activar Modo Juego
+# BTN = Activar Modo Juego
 $btnOn.Add_Click({
-    # 1) Ruta dinámica al EXE de CS desde el TextBox
     $csExe = $txtPath.Text.Trim()
     if (-not (Test-Path $csExe)) {
-        [System.Windows.Forms.MessageBox]::Show(
-            "No se encontró:`n$csExe","Error","OK","Error"
-        )
+        [System.Windows.Forms.MessageBox]::Show("No se encontró:`n$csExe","Error","OK","Error")
         return
     }
 
-    # 2) Armo los switches opcionales
     $flags = @()
     if ($chkValidate.Checked) { $flags += "-ValidateFiles" }
     if ($chkDeep.Checked)     { $flags += "-DeepOptimize" }
 
-    # 3) La invocación EXACTA que quieres
-    $cmd = ".\game-mode.ps1 -CsExePath `"$csExe`" $($flags -join ' ')"
-    $output.AppendText("🟢 Ejecutando:`n$cmd`n")
+    $script = Join-Path $basePath "game-mode.ps1"
+    if (-not (Test-Path $script)) {
+        $output.AppendText("❌ No se encontró el script game-mode.ps1`r`n")
+        return
+    }
 
-    # 4) Llamo PowerShell.exe con -File
-    $fullArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$basePath\game-mode.ps1`" -CsExePath `"$csExe`" $($flags -join ' ')"
-    Start-Process -FilePath powershell.exe -ArgumentList $fullArgs -NoNewWindow -Wait
+    $args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$script`"", "-CsExePath", "`"$csExe`"") + $flags
 
-    $output.AppendText("✅ game-mode.ps1 finalizó.`n")
+    $output.AppendText("🟢 Ejecutando game-mode.ps1...`r`n")
+
+    # Iniciar job
+    $job = Start-Job -ScriptBlock {
+        param($args)
+        powershell.exe @args
+    } -ArgumentList ($args)
+
+    # Registrar evento para saber cuando termina
+    Register-ObjectEvent -InputObject $job -EventName StateChanged -Action {
+        if ($Event.SourceEventArgs.JobStateInfo.State -eq 'Completed') {
+            $results = Receive-Job $Event.Sender -Keep
+            $form.Invoke([Action]{
+                $output.AppendText("$results`r`n✅ game-mode.ps1 finalizó.`r`n")
+            })
+            Remove-Job $Event.Sender
+        }
+    }
 })
 
 
