@@ -1,4 +1,4 @@
-﻿param(
+﻿﻿param(
     [switch] $NoInteraction
 )
 
@@ -15,27 +15,11 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-Write-Log "🛑 DESACTIVANDO MODO JUEGO Y RESTAURANDO ENTORNO NORMAL..."
+Write-Log "🛑 DESACTIVANDO MODO JUEGO (restaurando entorno)..."
 Write-Output "---------------------------------------------------"
 
-# — 1) Restaurar plan de energía —
-$originalPlanFile = "$env:TEMP\original_power_plan.txt"
-if (Test-Path $originalPlanFile) {
-    $guid = Get-Content $originalPlanFile
-    try {
-        powercfg -setactive $guid 2>$null
-        Write-Log "🔋 Plan restaurado: $guid"
-    } catch {
-        Write-Log "⚠️ No se pudo restaurar el plan original. Aplicando 'Balanceado'."
-        powercfg -setactive a1841308-3541-4fab-bc81-f71556f20b4a 2>$null
-    }
-    Remove-Item $originalPlanFile -Force
-} else {
-    Write-Log "⚠️ No se encontró plan original. Aplicando 'Balanceado'."
-    powercfg -setactive a1841308-3541-4fab-bc81-f71556f20b4a 2>$null
-}
 
-# — 2) Restaurar servicios —
+# Función de restore genérico de servicios
 function Restore-Services {
     param(
         [string[]] $Names,
@@ -52,35 +36,34 @@ function Restore-Services {
     }
 }
 
-Write-Log "🔁 Restaurando servicios esenciales..."
-$restoreServices = @(
-    "WSearch","SysMain","wuauserv","Spooler","XblAuthManager","BITS",
-    "WpnService","ShellHWDetection","StorSvc","W32Time"
+# — 2) Servicios básicos —
+Write-Log "🔁 Restaurando servicios básicos..."
+$basic = @(
+    "WSearch","SysMain","Fax","MapsBroker","DiagTrack"
+    "UsoSvc","wuauserv","PrintSpooler",
+    "Spooler","XblAuthManager"
 )
-Restore-Services -Names $restoreServices -StartupType "Manual"
+Restore-Services -Names $basic -StartupType "Manual"
 
-# Servicios de red y experiencia de usuario
-$autoServices = @("PrintSpooler","SensorService","WlanSvc","TimeBrokerSvc")
-Restore-Services -Names $autoServices -StartupType "Automatic"
+# — 3) Servicios extra de optimización profunda —
+Write-Log "🔁 Restaurando servicios extra..."
+$extra = @(
+    "dmwappushservice","W32Time","WerSvc","WpnService","WwanSvc",
+    "RemoteRegistry","ShellHWDetection","SensorService","SensorDataService",
+    "StorSvc","TimeBrokerSvc","UserDataSvc","UserDataAccess","WpcMonSvc"
+)
+Restore-Services -Names $extra -StartupType "Manual"
 
-# — 3) Restaurar efectos visuales y animaciones —
+# — 4) Restaurar efectos visuales por máscara y refrescar —
 Write-Log "🎨 Restaurando efectos visuales..."
 try {
-    Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" `
-        -Name "UserPreferencesMask" `
-        -Value ([byte[]](0x9E,0x3E,0x07,0x80,0x10,0x00,0x00,0x00)) `
-        -ErrorAction SilentlyContinue
-
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" `
-        -Name "VisualFXSetting" -Value 0 -ErrorAction SilentlyContinue
-
     RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters ,1 ,True
-    Write-Log "✅ Apariencia restaurada (modo automático)"
+    Write-Log "🌈 Entorno visual refrescado."
 } catch {
-    Write-Log "⚠️ No se pudo restaurar apariencia visual."
+    Write-Log "⚠️ No se pudo refrescar entorno visual."
 }
 
-# — 4) Restaurar Game Mode y Game DVR —
+# — 5) Restaurar Game Mode / Game DVR —
 Write-Log "🎮 Restaurando Game Mode y Game DVR..."
 try {
     Set-ItemProperty -Path "HKCU:\System\GameConfigStore" `
@@ -94,7 +77,7 @@ try {
     Write-Log "⚠️ Falló restaurar Game Mode / DVR."
 }
 
-# — 5) Restaurar tareas de telemetría —
+# — 6) Restaurar tareas de telemetría —
 Write-Log "📅 Restaurando tareas de telemetría..."
 $tasks = @(
     "\Microsoft\Windows\Application Experience\ProgramDataUpdater",
@@ -111,14 +94,35 @@ foreach ($t in $tasks) {
     }
 }
 
-# — 6) Servicios de telemetría —
+Write-Log "🎨 Restaurando efectos visuales a valor por defecto..."
+
+try {
+    # Volver a "automático" (dejar que Windows decida)
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" `
+        -Name "VisualFXSetting" -Value 0 -ErrorAction SilentlyContinue
+
+    # Restaurar máscara animaciones estándar
+    Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" `
+        -Name "UserPreferencesMask" `
+        -Value ([byte[]](0x9E,0x3E,0x07,0x80,0x10,0x00,0x00,0x00)) `
+        -ErrorAction SilentlyContinue
+
+    RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters ,1 ,True
+
+    Write-Log "✅ Efectos visuales restaurados (modo automático)."
+} catch {
+    Write-Log "⚠️ No se pudo restaurar la apariencia visual."
+}
+
+
+# — 7) Servicios de telemetría —
 Write-Log "📡 Restaurando servicios de telemetría..."
-$tele = @("DiagTrack","dmwappushservice","WMPNetworkSvc","CDPSvc")
+$tele = @("DiagTrack","dmwappushservice","WMPNetworkSvc")
 Restore-Services -Names $tele -StartupType "Manual"
 
-Write-Log "✅ Modo Juego desactivado. Sistema restaurado a modo de uso diario optimizado."
+Write-Log "✅ Entorno restaurado. Modo juego desactivado correctamente."
 
-# — 7) Final —
+# No dejar Read-Host colgado cuando viene de la GUI
 if (-not $NoInteraction) {
     Read-Host "Presiona Enter para finalizar..."
 }

@@ -1,3 +1,4 @@
+﻿
 ﻿param(
     [string]$CsExePath,
     [switch]$ValidateFiles,
@@ -32,25 +33,6 @@ foreach ($s in $svcs) {
     Write-Output "`n⛔ Servicio detenido: $s`n"
 }
 
-# Servicios agresivos (añadir al bloque de $svcs principal o DeepOptimize)
-$moreSvcs = @(
-    "CDPSvc",  # Connected Devices Platform
-    "CDPUserSvc*",  # Per-user instances, se buscan con wildcard
-    "WpnUserService*",  # Push Notification por usuario
-    "BthAvctpSvc",  # Bluetooth Audio
-    "PhoneSvc",  # Telefonía (siempre está en laptops)
-    "SharedAccess",  # ICS (compartir red)
-    "RetailDemo"  # Servicio de demo retail (sí, existe 🤡)
-)
-foreach ($svc in $moreSvcs) {
-    Get-Service -Name $svc -ErrorAction SilentlyContinue | ForEach-Object {
-        Stop-Service $_.Name -Force -ErrorAction SilentlyContinue
-        Set-Service $_.Name -StartupType Disabled -ErrorAction SilentlyContinue
-        Write-Output "`n🔻 Servicio avanzado detenido: $($_.Name)`n"
-    }
-}
-
-
 # Cerrar apps de fondo
 $apps = @("OneDrive","FACEIT","EADesktop","RiotClientServices","Docker Desktop","LGHUB")
 foreach ($a in $apps) {
@@ -80,30 +62,6 @@ if (Test-Path $ramCleaner) {
 } else {
     Write-Output "`n❌ EmptyStandbyList.exe no encontrado.`n"
 }
-
-#Latencia de red
-
-# Desactivar auto-tuning y Nagle Algorithm
-netsh int tcp set global autotuninglevel=disabled
-netsh int tcp set global rss=enabled
-netsh int tcp set global chimney=enabled
-netsh int tcp set global netdma=enabled
-netsh int tcp set global ecncapability=disabled
-netsh int tcp set heuristics disabled
-Write-Output "`n🌐 Latencia de red optimizada para gaming.`n"
-
-
-# Desactivar widgets
-
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\Main" /v AllowPrelaunch /t REG_DWORD /d 0 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v ExcludeWUDriversInQualityUpdate /t REG_DWORD /d 1 /f
-
-# Desactivar tareas de Windows Update y PushToInstall
-schtasks /Change /TN "\Microsoft\Windows\UpdateOrchestrator\Reboot" /Disable | Out-Null
-schtasks /Change /TN "\Microsoft\Windows\PushToInstall\LoginCheck" /Disable | Out-Null
-
-
 
 # Optimización profunda (si fue activada)
 if ($DeepOptimize) {
@@ -179,25 +137,11 @@ if ($ValidateFiles) {
 $logicalCores = [Environment]::ProcessorCount
 $affinityMask = [Math]::Pow(2, $logicalCores) - 1
 
-Write-Output "`n🕹 Optimización completada. Ahora abrí CS2 manualmente desde Steam."
-Write-Output "`n⚠️ No se lanzó automáticamente para evitar conflictos con VAC.`n"
-Start-Sleep -Seconds 2
-Start-Process "explorer.exe" "steam://rungameid/730"
+Write-Output "`n🚀 Lanzando CS2 desde: $CsExePath`n"
+Start-Process -FilePath $CsExePath -ArgumentList "-applaunch 730"
+do { Start-Sleep 1 } until (Get-Process -Name cs2 -ErrorAction SilentlyContinue)
 
-
-# Configurar prioridad y afinidad
-$csProc = Get-Process -Name cs2 -ErrorAction SilentlyContinue
-if ($csProc) {
-    "$($csProc.Id): Priority=$($csProc.PriorityClass), Affinity=$($csProc.ProcessorAffinity)" | Set-Content "$env:TEMP\cs2_proc_config.txt"
-}
-
-# Habilitar GPU Scheduling
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" `
-    -Name "HwSchMode" -PropertyType DWord -Value 2 -Force | Out-Null
-
-# Preferir apps de alto rendimiento para GPU
-New-ItemProperty -Path "HKCU:\Software\Microsoft\DirectX\UserGpuPreferences" `
-    -Name "$CsExePath" -PropertyType String -Value "GpuPreference=2;" -Force | Out-Null
-Write-Output "`n🎮 GPU optimizada para CS2.`n"
-
+$p = Get-Process -Name cs2
+$p.PriorityClass = 'High'
+$p.ProcessorAffinity = [int]$affinityMask
 Write-Output "`n⚙ Prioridad=High, Afinidad=Todos los núcleos disponibles.`n"
