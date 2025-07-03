@@ -1,6 +1,6 @@
-# 🎮 ModoJuego - Optimizador de Windows para Gaming
+# 🎮 OptimizadorCS2 - Optimizador de Windows para Gaming
 
-**ModoJuego** es una herramienta para optimizar tu entorno Windows antes de jugar, desactivando procesos y servicios innecesarios, limpiando la RAM, activando el plan de energía adecuado y mejorando el rendimiento general. Incluye la opción de restaurar el entorno una vez finalizada la sesión de juego.
+**Optimizador** es una herramienta para optimizar tu entorno Windows antes de jugar, desactivando procesos y servicios innecesarios, limpiando la RAM, activando el plan de energía adecuado y mejorando el rendimiento general. Incluye la opción de restaurar el entorno una vez finalizada la sesión de juego.
 
 ---
 
@@ -24,13 +24,13 @@ Esto te permitirá volver al estado anterior de Windows en caso de que algo no f
 
 1. Buscar en el menú Inicio: `Crear un punto de restauración`.
 2. Seleccionar tu unidad principal (C:), y hacer clic en `Crear`.
-3. Asignarle un nombre como "Antes de ModoJuego" y confirmar.
+3. Asignarle un nombre como "Antes de Optimizador" y confirmar.
 
 ☑️ Este paso es **opcional pero muy recomendable**, especialmente si vas a usar la opción de **"Optimización profunda de Windows"** que realiza cambios más extensos en el sistema.
 
 ---
 
-## ▶️ Cómo utilizar ModoJuego
+## ▶️ Cómo utilizar Optimizador
 
 1. **Agregar la ruta del ejecutable de CS2** (por ejemplo: `C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\bin\win64`).
 2. ✅ **(Solo la primera vez)**: Activar la opción `Validar archivos`.
@@ -65,7 +65,7 @@ Una vez que termines de jugar y quieras restaurar el sistema a su estado anterio
 
 ## 📁 Archivos incluidos
 
-- `ModoJuego.exe`: ejecutable principal.
+- `Optimizador.exe`: ejecutable principal.
 - `EmptyStandbyList.exe`: utilidad para limpiar memoria standby.
 - `Exit-Game-Mode.exe`: restaurador de entorno.
 - `icono.ico`: ícono personalizado.
