@@ -162,7 +162,7 @@ function Disable-StartupApps {
     foreach ($item in $startupItems) {
         Write-Host "`nNombre: $($item.Name)"
         Write-Host "Comando: $($item.Command)"
-        $response = Read-Host "¿Deseas deshabilitar este programa del arranque? (s/n)"
+        $response = Read-Host "¿Deseás deshabilitar este programa del arranque? (s/n)"
         if ($response -eq "s") {
             $registryPath = $item.Location
             try {
@@ -174,7 +174,6 @@ function Disable-StartupApps {
         }
     }
 }
-
 
 
 function Ask-WindowsUpdate {
@@ -209,8 +208,10 @@ Disable-Wallpaper
 Disable-UnneededServices
 Remove-Bloatware
 Ask-ToRemoveOptionalApps
-Disable-StartupApps
-
+$respuesta = Read-Host "¿Querés revisar y modificar los programas que se ejecutan al inicio? (s/n)"
+if ($respuesta -eq 's') {
+    Disable-StartupApps
+}
 
 
 Write-Host "`n✅ Optimización de Modo Juego completada." -ForegroundColor Cyan
